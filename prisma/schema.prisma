@@ -32,13 +32,15 @@ model Company {
   updatedAt DateTime @updatedAt
 
   // Relations
-  plan          Plan             @relation(fields: [planId], references: [id])
-  users         User[]
-  customers     Customer[]
-  devices       Device[]
-  appointments  Appointment[]
-  payments      Payment[]
-  notifications Notification[]
+  plan           Plan             @relation(fields: [planId], references: [id])
+  users          User[]
+  customers      Customer[]
+  devices        Device[]
+  appointments   Appointment[]
+  payments       Payment[]
+  notifications  Notification[]
+  refreshTokens  RefreshToken[]
+  logs           Log[]
 
   @@index([planId])
   @@map("companies")
@@ -59,6 +61,7 @@ model User {
   // Relations
   company       Company        @relation(fields: [companyId], references: [id])
   refreshTokens RefreshToken[]
+  logs          Log[]
 
   @@index([companyId])
   @@map("users")
@@ -69,18 +72,118 @@ enum UserRole {
   STAFF
 }
 
+enum ClientType {
+  WEB
+  MOBILE
+  ADMIN
+}
+
+enum LogAction {
+  // 🔐 Authentication
+  LOGIN
+  LOGOUT
+  REFRESH_TOKEN
+  CHANGE_PASSWORD
+  PASSWORD_RESET_REQUEST
+  PASSWORD_RESET_COMPLETE
+  
+  // 🚫 Authorization & Security
+  FORBIDDEN_MOBILE_LOGIN
+  UNAUTHORIZED_ACCESS
+  PLAN_VIOLATION
+  TOKEN_EXPIRED
+  TOKEN_REVOKED
+  INVALID_CREDENTIALS
+  
+  // 👥 User Management
+  CREATE_USER
+  UPDATE_USER
+  DELETE_USER
+  ACTIVATE_USER
+  DEACTIVATE_USER
+  
+  // 👤 Customer Management
+  CREATE_CUSTOMER
+  UPDATE_CUSTOMER
+  DELETE_CUSTOMER
+  VIEW_CUSTOMER
+  
+  // 📅 Appointment Management
+  CREATE_APPOINTMENT
+  UPDATE_APPOINTMENT
+  CANCEL_APPOINTMENT
+  COMPLETE_APPOINTMENT
+  MISS_APPOINTMENT
+  VIEW_APPOINTMENT
+  
+  // 🖥️ Device Management
+  CREATE_DEVICE
+  UPDATE_DEVICE
+  DELETE_DEVICE
+  
+  // 💰 Payment Management
+  CREATE_PAYMENT
+  UPDATE_PAYMENT
+  DELETE_PAYMENT
+  REFUND_PAYMENT
+  
+  // 📊 Reports & Analytics
+  VIEW_REPORT
+  EXPORT_REPORT
+  
+  // ⚙️ System & Admin
+  CHANGE_PLAN
+  UPDATE_SETTINGS
+  SYSTEM_ERROR
+}
+
 model RefreshToken {
-  id        String   @id @default(uuid())
-  userId    String
-  tokenHash String   @unique @db.VarChar(500)
-  expiresAt DateTime
-  createdAt DateTime @default(now())
+  id         String     @id @default(uuid())
+  userId     String
+  companyId  String
+  tokenHash  String     @unique @db.VarChar(500)
+  clientType ClientType
+  deviceId   String?    @db.VarChar(255)
+  deviceName String?    @db.VarChar(255)
+  ipAddress  String     @db.VarChar(45)
+  userAgent  String     @db.Text
+  expiresAt  DateTime
+  createdAt  DateTime   @default(now())
+  lastUsedAt DateTime   @default(now())
+  revokedAt  DateTime?
 
   // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([companyId])
+  @@index([tokenHash])
+  @@index([deviceId])
   @@map("refresh_tokens")
+}
+
+model Log {
+  id         String     @id @default(uuid())
+  companyId  String?
+  userId     String?
+  action     LogAction
+  clientType ClientType
+  ipAddress  String     @db.VarChar(45)
+  deviceId   String?    @db.VarChar(255)
+  userAgent  String     @db.Text
+  metadata   Json?
+  createdAt  DateTime   @default(now())
+
+  // Relations
+  company Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user    User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([companyId])
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("logs")
 }
 
 model Customer {

@@ -41,7 +41,8 @@ import {
     PaymentService,
     DeviceService,
     NotificationsService,
-    ReportsService
+    ReportsService,
+    LogService,
 } from './services/index.js';
 
 // Controllers
@@ -120,7 +121,8 @@ async function buildApp() {
     customerService.setMessageDependencies(appointmentRepository, paymentRepository);
 
     // Initialize controllers
-    const authController = new AuthController(authService, userRepository, fastify);
+    const logService = new LogService(fastify.prisma);
+    const authController = new AuthController(authService, userRepository, logService, fastify);
     const customersController = new CustomersController(customerService);
     const appointmentsController = new AppointmentsController(appointmentService);
     const dashboardController = new DashboardController(dashboardService);
