@@ -2,9 +2,10 @@
 import config from '../config/index.js';
 
 export class AuthController {
-    constructor(authService, userRepository, fastify) {
+    constructor(authService, userRepository, logService, fastify) {
         this.authService = authService;
         this.userRepository = userRepository;
+        this.logService = logService;
         this.fastify = fastify;
     }
 
@@ -12,19 +13,37 @@ export class AuthController {
      * POST /api/auth/login
      */
     async login(request, reply) {
-        const { email, password } = request.body;
+        const { email, password, clientType = 'WEB', deviceId, deviceName } = request.body;
+        const ipAddress = request.ip;
+        const userAgent = request.headers['user-agent'] || 'Unknown';
 
-        const result = await this.authService.login(email, password);
+        try {
+            const result = await this.authService.login(email, password);
 
-        // Set auth cookies
-        this.fastify.setAuthCookies(reply, result.accessToken, result.refreshToken);
+            // Log successful login
+            await this.logService.logLogin(
+                result.user,
+                clientType,
+                ipAddress,
+                userAgent,
+                deviceId || null,
+                deviceName || null
+            );
 
-        return {
-            success: true,
-            data: {
-                user: result.user,
-            },
-        };
+            // Set auth cookies
+            this.fastify.setAuthCookies(reply, result.accessToken, result.refreshToken);
+
+            return {
+                success: true,
+                data: {
+                    user: result.user,
+                },
+            };
+        } catch (error) {
+            // Log failed login
+
+            throw error;
+        }
     }
 
     /**
@@ -32,6 +51,10 @@ export class AuthController {
      */
     async refresh(request, reply) {
         const refreshToken = request.cookies.refresh_token;
+        const clientType = request.headers['x-client-type'] || 'WEB';
+        const ipAddress = request.ip;
+        const userAgent = request.headers['user-agent'] || 'Unknown';
+        const deviceId = request.headers['x-device-id'] || null;
 
         if (!refreshToken) {
             reply.code(401);
@@ -43,6 +66,18 @@ export class AuthController {
 
         try {
             const result = await this.authService.refresh(refreshToken);
+
+            // Get user info for logging - result only has tokens, need to get user from request
+            if (request.user) {
+                await this.logService.logTokenRefresh(
+                    request.user.id,
+                    request.user.companyId,
+                    clientType,
+                    ipAddress,
+                    userAgent,
+                    deviceId
+                );
+            }
 
             // Set new auth cookies
             this.fastify.setAuthCookies(reply, result.accessToken, result.refreshToken);
