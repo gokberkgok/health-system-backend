@@ -233,7 +233,34 @@ export class AppointmentRepository {
     }
 
     /**
+     * Parse date string preserving local time (removes timezone conversion)
+     * Input: "2026-02-09T09:00:00.000Z" or "2026-02-09T09:00:00+03:00"
+     * Output: Date object representing 09:00 in server's local timezone
+     */
+    parseLocalDate(dateString) {
+        // Parse the date string and extract just the datetime part without timezone
+        const match = dateString.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})/);
+        if (match) {
+            const [, year, month, day, hour, minute, second] = match;
+            // Create date in local timezone
+            return new Date(
+                parseInt(year),
+                parseInt(month) - 1, // Month is 0-indexed
+                parseInt(day),
+                parseInt(hour),
+                parseInt(minute),
+                parseInt(second)
+            );
+        }
+        // Fallback to standard parsing
+        return new Date(dateString);
+    }
+
+
+    /**
      * Create appointment with transaction-safe device booking
+     * IMPORTANT: We pass date strings directly to Prisma WITHOUT new Date() conversion
+     * This preserves the local time as sent from frontend (e.g., "2026-02-09T09:00:00")
      */
     async create(companyId, data) {
         return this.prisma.$transaction(async (tx) => {
@@ -256,21 +283,21 @@ export class AppointmentRepository {
 
             const deviceMap = new Map(deviceRecords.map((d) => [d.name, d.id]));
 
-            // Create appointment with devices
+            // Create appointment with devices - pass strings directly, no Date conversion
             return tx.appointment.create({
                 data: {
                     companyId: companyId,
                     customerId: data.customerId,
-                    startTime: new Date(data.startTime),
-                    endTime: new Date(data.endTime),
+                    startTime: data.startTime,  // Pass string directly
+                    endTime: data.endTime,      // Pass string directly
                     status: 'scheduled',
                     notes: data.notes,
                     devices: {
                         create: data.devices.map((device, index) => ({
                             deviceId: deviceMap.get(device.deviceName),
                             deviceName: device.deviceName,
-                            startTime: new Date(device.startTime),
-                            endTime: new Date(device.endTime),
+                            startTime: device.startTime,  // Pass string directly
+                            endTime: device.endTime,      // Pass string directly
                             sequence: index + 1,
                         })),
                     },
@@ -282,6 +309,8 @@ export class AppointmentRepository {
             });
         });
     }
+
+
 
     /**
      * Update appointment (reschedule)
