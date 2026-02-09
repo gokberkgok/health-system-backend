@@ -227,7 +227,7 @@ export class CustomerService {
 
         // Upcoming scheduled appointments
         if (upcomingScheduled.length > 0) {
-            message += `📅 *Planlanmış Randevular:*\n`;
+            message += ` *Planlanmış Randevular:*\n`;
             for (const apt of upcomingScheduled) {
                 const day = this.formatDayName(apt.startTime);
                 const time = this.formatTime(apt.startTime);
@@ -241,7 +241,7 @@ export class CustomerService {
 
         // Past scheduled appointments (not completed/cancelled)
         if (pastScheduled.length > 0) {
-            message += `⏰ *Geçmiş Randevular (Zamanı Geçmiş):*\n`;
+            message += ` *Geçmiş Randevular (Zamanı Geçmiş):*\n`;
             for (const apt of pastScheduled) {
                 const date = this.formatDate(apt.startTime);
                 const time = this.formatTime(apt.startTime);
@@ -254,12 +254,12 @@ export class CustomerService {
 
         // If no upcoming appointments
         if (upcomingScheduled.length === 0 && pastScheduled.length === 0) {
-            message += `📅 Şu an için planlanmış randevunuz bulunmamaktadır.\n\n`;
+            message += ` Şu an için planlanmış randevunuz bulunmamaktadır.\n\n`;
         }
 
         // Completed appointments
         if (completed.length > 0) {
-            message += `✅ *Tamamlanan Randevular (Son ${completed.length}):*\n`;
+            message += `*Tamamlanan Randevular (Son ${completed.length}):*\n`;
             for (const apt of completed) {
                 const date = this.formatDate(apt.startTime);
                 const time = this.formatTime(apt.startTime);
@@ -272,7 +272,7 @@ export class CustomerService {
 
         // Cancelled appointments
         if (cancelled.length > 0) {
-            message += `❌ *İptal Edilen Randevular (Son ${cancelled.length}):*\n`;
+            message += ` *İptal Edilen Randevular (Son ${cancelled.length}):*\n`;
             for (const apt of cancelled) {
                 const date = this.formatDate(apt.startTime);
                 const time = this.formatTime(apt.startTime);
@@ -315,7 +315,7 @@ export class CustomerService {
                 const date = this.formatDate(p.paidAt);
                 const amount = `${Number(p.amount).toFixed(2)} TL`;
                 const type = p.paymentType === 'CASH' ? 'Peşin' : 'Taksit';
-                message += `✅ ${date} - ${amount} (${type})\n`;
+                message += `${date} - ${amount} (${type})\n`;
             }
             message += `\n`;
         }

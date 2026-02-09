@@ -30,13 +30,21 @@ export class AuthController {
                 deviceName || null
             );
 
-            // Set auth cookies
+            // Set auth cookies (for web)
             this.fastify.setAuthCookies(reply, result.accessToken, result.refreshToken);
+
+            // For mobile clients, also include tokens in response body
+            const isMobile = clientType === 'MOBILE';
 
             return {
                 success: true,
                 data: {
                     user: result.user,
+                    // Only include tokens for mobile clients
+                    ...(isMobile && {
+                        accessToken: result.accessToken,
+                        refreshToken: result.refreshToken,
+                    }),
                 },
             };
         } catch (error) {
@@ -50,8 +58,23 @@ export class AuthController {
      * POST /api/auth/refresh
      */
     async refresh(request, reply) {
-        const refreshToken = request.cookies.refresh_token;
         const clientType = request.headers['x-client-type'] || 'WEB';
+        const isMobile = clientType === 'MOBILE';
+
+        // For mobile: get refresh token from Authorization header or body
+        // For web: get from cookie
+        let refreshToken;
+        if (isMobile) {
+            const authHeader = request.headers['authorization'];
+            if (authHeader && authHeader.startsWith('Bearer ')) {
+                refreshToken = authHeader.substring(7);
+            } else if (request.body && request.body.refreshToken) {
+                refreshToken = request.body.refreshToken;
+            }
+        } else {
+            refreshToken = request.cookies.refresh_token;
+        }
+
         const ipAddress = request.ip;
         const userAgent = request.headers['user-agent'] || 'Unknown';
         const deviceId = request.headers['x-device-id'] || null;
@@ -79,12 +102,19 @@ export class AuthController {
                 );
             }
 
-            // Set new auth cookies
+            // Set new auth cookies (for web)
             this.fastify.setAuthCookies(reply, result.accessToken, result.refreshToken);
 
             return {
                 success: true,
-                data: { message: 'Token yenilendi' },
+                data: {
+                    message: 'Token yenilendi',
+                    // Only include tokens for mobile clients
+                    ...(isMobile && {
+                        accessToken: result.accessToken,
+                        refreshToken: result.refreshToken,
+                    }),
+                },
             };
         } catch (error) {
             // If refresh fails, CLEAR COOKIES to prevent infinite loops in frontend middleware
