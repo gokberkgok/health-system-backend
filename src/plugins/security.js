@@ -49,8 +49,8 @@ async function securityPlugin(fastify, options) {
     // CORS - Strict configuration for frontend only
     await fastify.register(cors, {
         origin: [
-            'https://benimmarkam.com',
-            'https://app.benimmarkam.com'
+            'https://2b83e693.health-system-frontend.pages.dev',
+            'https://app.2b83e693.health-system-frontend.pages.dev'
         ],
         credentials: true,
         methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
