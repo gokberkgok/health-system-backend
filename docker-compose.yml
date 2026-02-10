@@ -1,16 +1,13 @@
 services:
   backend:
     build: ./backend/health-system-backend
-    working_dir: /app
-    volumes:
-      - ./backend/health-system-backend:/app
     env_file:
       - .env
-    command: npm run start
     ports:
       - "5000:5000"
     depends_on:
       - mysql
+    restart: always
 
   mysql:
     image: mysql:8.0
