@@ -18,7 +18,11 @@ export class AuthController {
         const userAgent = request.headers['user-agent'] || 'Unknown';
 
         try {
-            const result = await this.authService.login(email, password);
+            const result = await this.authService.login(email, password, {
+                clientType,
+                ipAddress,
+                userAgent,
+            });
 
             // Log successful login
             await this.logService.logLogin(

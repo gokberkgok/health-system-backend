@@ -36,7 +36,9 @@ export class AuthService {
     /**
      * Login with email and password
      */
-    async login(email, password) {
+    async login(email, password, options = {}) {
+        const { clientType = 'WEB', ipAddress = '0.0.0.0', userAgent = 'Unknown' } = options;
+
         // Validate input
         if (!validateEmail(email)) {
             throw new ValidationError('Geçersiz e-posta formatı');
@@ -69,11 +71,12 @@ export class AuthService {
             tokenPreview: `${refreshToken.substring(0, 8)}...`,
             hashPreview: `${tokenHash.substring(0, 16)}...`,
             userId: user.id.toString(),
+            clientType,
             expiresAt
         });
 
-        // Store refresh token - Delete old, create new
-        await this.refreshTokenRepository.upsertForUser(user.id, refreshToken, expiresAt);
+        // Store refresh token - Delete old, create new (with client info)
+        await this.refreshTokenRepository.upsertForUser(user.id, refreshToken, expiresAt, clientType, ipAddress, userAgent);
 
         return {
             accessToken,

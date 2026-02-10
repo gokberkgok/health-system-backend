@@ -140,7 +140,7 @@ export class RefreshTokenRepository {
     /**
      * @deprecated Use create() with full client data instead
      */
-    async upsertForUser(userId, token, expiresAt) {
+    async upsertForUser(userId, token, expiresAt, clientType = 'WEB', ipAddress = '0.0.0.0', userAgent = 'Legacy') {
         // This is a simplified version for backward compatibility
         const tokenHash = hashToken(token);
 
@@ -167,15 +167,15 @@ export class RefreshTokenRepository {
             select: { companyId: true },
         });
 
-        // Create new token (with minimal data for legacy support)
+        // Create new token with provided client info
         return await this.prisma.refreshToken.create({
             data: {
                 userId,
                 companyId: user.companyId,
                 tokenHash,
-                clientType: 'WEB', // Default to WEB for legacy
-                ipAddress: '0.0.0.0',
-                userAgent: 'Legacy',
+                clientType,
+                ipAddress,
+                userAgent,
                 expiresAt,
             },
         });
