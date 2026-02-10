@@ -1,0 +1,30 @@
+services:
+  backend:
+    build: ./backend/health-system-backend
+    working_dir: /app
+    volumes:
+      - ./backend/health-system-backend:/app
+    env_file:
+      - .env
+    command: npm run start
+    ports:
+      - "5000:5000"
+    depends_on:
+      - mysql
+
+  mysql:
+    image: mysql:8.0
+    command: --default-authentication-plugin=mysql_native_password
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: health_saas
+      MYSQL_USER: saasuser
+      MYSQL_PASSWORD: Gokberk5441863-*GG
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+volumes:
+  mysql_data:
