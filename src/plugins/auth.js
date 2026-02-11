@@ -71,6 +71,7 @@ async function authPlugin(fastify, options) {
             'Secure',
             'SameSite=None',
             'Path=/',
+            'Domain=https://health-system-backend-production-2dc9.up.railway.app', // BURAYI backend domain yap
             `Max-Age=${accessTokenMaxAge}`
         ].join('; ');
         
@@ -80,6 +81,7 @@ async function authPlugin(fastify, options) {
             'Secure',
             'SameSite=None',
             'Path=/',
+            'Domain=https://health-system-backend-production-2dc9.up.railway.app', // BURAYI backend domain yap
             `Max-Age=${refreshTokenMaxAge}`
         ].join('; ');
 
@@ -94,6 +96,7 @@ async function authPlugin(fastify, options) {
             secure: true,
             sameSite: 'none',
             nodeEnv: config.nodeEnv,
+            domain: 'https://health-system-backend-production-2dc9.up.railway.app',
             setCookieHeader: headers['set-cookie'] || 'STILL NOT SET',
             allHeaders: Object.keys(headers),
         });

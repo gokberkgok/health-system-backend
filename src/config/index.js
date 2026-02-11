@@ -58,6 +58,7 @@ export const config = {
     secure: process.env.NODE_ENV === 'production',
     // Use 'none' for cross-origin cookie support
     sameSite: 'none',
+    domain: 'https://health-system-backend-production-2dc9.up.railway.app',
     httpOnly: true,
     path: '/',
   },
