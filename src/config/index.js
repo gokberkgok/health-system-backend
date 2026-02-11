@@ -56,8 +56,8 @@ export const config = {
   // Cookies
   cookie: {
     secure: process.env.NODE_ENV === 'production',
-    // Use 'none' for production (cross-origin) and 'lax' for development  
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    // Use 'lax' for both environments
+    sameSite: 'lax',
     httpOnly: true,
     path: '/',
   },
