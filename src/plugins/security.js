@@ -48,8 +48,8 @@ async function securityPlugin(fastify, options) {
 
 
     const allowedOrigins = [
-        config.frontendUrl,
-        'https://wellasoft.com',      
+        'https://wellasoft.com', 
+        'https://health-system-frontend.pages.dev',
         'https://www.wellasoft.com',  
         'https://app.wellasoft.com', 
         'http://localhost:3000'

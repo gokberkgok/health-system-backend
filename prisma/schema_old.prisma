@@ -6,7 +6,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql" 
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
@@ -32,31 +32,31 @@ model Company {
   updatedAt DateTime @updatedAt
 
   // Relations
-  plan          Plan           @relation(fields: [planId], references: [id])
-  users         User[]
-  customers     Customer[]
-  devices       Device[]
-  appointments  Appointment[]
-  payments      Payment[]
-  notifications Notification[]
-  refreshTokens RefreshToken[]
-  logs          Log[]
+  plan           Plan             @relation(fields: [planId], references: [id])
+  users          User[]
+  customers      Customer[]
+  devices        Device[]
+  appointments   Appointment[]
+  payments       Payment[]
+  notifications  Notification[]
+  refreshTokens  RefreshToken[]
+  logs           Log[]
 
   @@index([planId])
   @@map("companies")
 }
 
 model User {
-  id           String   @id @default(uuid())
-  companyId    String
+  id        String   @id @default(uuid())
+  companyId String
   email        String   @unique @db.VarChar(255)
   passwordHash String   @map("password") @db.VarChar(255)
   firstName    String   @db.VarChar(255)
   lastName     String   @db.VarChar(255)
   role         UserRole @default(STAFF)
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
   company       Company        @relation(fields: [companyId], references: [id])
@@ -225,8 +225,8 @@ model Device {
   updatedAt   DateTime @updatedAt
 
   // Relations
-  company            Company             @relation(fields: [companyId], references: [id])
-  appointmentDevices AppointmentDevice[]
+  company             Company             @relation(fields: [companyId], references: [id])
+  appointmentDevices  AppointmentDevice[]
 
   @@unique([companyId, name])
   @@index([companyId])
