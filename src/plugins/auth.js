@@ -94,8 +94,20 @@ async function authPlugin(fastify, options) {
 
     // Helper to clear auth cookies
     fastify.decorate('clearAuthCookies', (reply) => {
-        reply.clearCookie('access_token', { path: '/' });
-        reply.clearCookie('refresh_token', { path: '/' });
+        const isProduction = process.env.NODE_ENV === 'production';
+        const domain = isProduction ? '.wellasoft.com' : undefined;
+
+        // Clear cookies with same options as when they were set
+        const clearOptions = {
+            path: '/',
+            httpOnly: true,
+            secure: true,
+            sameSite: 'none',
+            ...(domain && { domain }),
+        };
+        
+        reply.clearCookie('access_token', clearOptions);
+        reply.clearCookie('refresh_token', clearOptions);
     });
 
     fastify.log.info('JWT authentication configured');

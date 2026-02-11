@@ -250,7 +250,7 @@ export class AuthController {
         reply.cookie('access_token', accessToken, {
             httpOnly: true,
             secure: config.nodeEnv === 'production',
-            sameSite: 'strict',
+            sameSite: 'none',
             path: '/',
             maxAge: config.jwt.accessExpiresInMs,
         });
