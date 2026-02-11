@@ -53,8 +53,25 @@ async function securityPlugin(fastify, options) {
         'https://health-system-frontend.pages.dev'
     ].filter(Boolean); // Remove null/undefined values
 
+    console.log('[CORS DEBUG] Allowed origins:', allowedOrigins);
+
     await fastify.register(cors, {
-        origin: allowedOrigins,
+        origin: (origin, callback) => {
+            console.log('[CORS DEBUG] Request from origin:', origin);
+            // Allow requests with no origin (e.g., mobile apps, Postman, curl)
+            if (!origin) {
+                callback(null, true);
+                return;
+            }
+            // Check if origin is in allowed list
+            if (allowedOrigins.includes(origin)) {
+                console.log('[CORS DEBUG] Origin allowed:', origin);
+                callback(null, true);
+            } else {
+                console.log('[CORS DEBUG] Origin REJECTED:', origin);
+                callback(new Error('Not allowed by CORS'));
+            }
+        },
         credentials: true,
         methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
         allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'X-Requested-With'],
@@ -62,7 +79,7 @@ async function securityPlugin(fastify, options) {
         maxAge: 86400, // 24 hours
     });
 
-    fastify.log.info(`CORS configured for: ${config.frontendUrl}`);
+    fastify.log.info(`CORS configured for: ${allowedOrigins.join(', ')}`);
 
     // Global Rate Limiting
     await fastify.register(rateLimit, {

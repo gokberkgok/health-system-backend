@@ -7,13 +7,9 @@ import config from '../config/index.js';
 async function authPlugin(fastify, options) {
     // Cookie support
     await fastify.register(cookie, {
-        secret: config.jwt.accessSecret, // For signed cookies
-        parseOptions: {
-            httpOnly: true,
-            secure: config.cookie.secure,
-            sameSite: config.cookie.sameSite,
-            path: config.cookie.path,
-        },
+        secret: config.jwt.accessSecret, // For signed cookies (optional)
+        // parseOptions is only for parsing incoming cookies, NOT for setting them
+        parseOptions: {},
     });
 
     fastify.log.info('Cookie support configured');

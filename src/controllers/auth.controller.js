@@ -16,6 +16,14 @@ export class AuthController {
         const { email, password, clientType = 'WEB', deviceId, deviceName } = request.body;
         const ipAddress = request.ip;
         const userAgent = request.headers['user-agent'] || 'Unknown';
+        const origin = request.headers['origin'] || 'No Origin';
+
+        // Log request origin for debugging
+        console.log('[AUTH DEBUG] Login request:', {
+            origin,
+            clientType,
+            ipAddress,
+        });
 
         try {
             const result = await this.authService.login(email, password, {
