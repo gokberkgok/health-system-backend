@@ -65,41 +65,31 @@ async function authPlugin(fastify, options) {
         const accessTokenMaxAge = 15 * 60; // 15 minutes
         const refreshTokenMaxAge = 7 * 24 * 60 * 60; // 7 days
         
+        const isProduction = process.env.NODE_ENV === 'production';
+        const domain = isProduction ? '.wellasoft.com' : undefined; // Localhost'ta domain undefined olmalı
+
         const accessCookie = [
             `access_token=${accessToken}`,
             'HttpOnly',
-            'Secure',
-            'SameSite=None',
+            'Secure', // HTTPS şart
+            'SameSite=None', // Farklı subdomainler (api. ve www.) konuşacağı için None kalmalı
             'Path=/',
-            'Domain=https://health-system-backend-production-2dc9.up.railway.app', // BURAYI backend domain yap
+            domain ? `Domain=${domain}` : '', // DİKKAT: https:// yok!
             `Max-Age=${accessTokenMaxAge}`
-        ].join('; ');
-        
+        ].filter(Boolean).join('; ');
+
         const refreshCookie = [
             `refresh_token=${refreshToken}`,
             'HttpOnly',
             'Secure',
             'SameSite=None',
             'Path=/',
-            'Domain=https://health-system-backend-production-2dc9.up.railway.app', // BURAYI backend domain yap
+            domain ? `Domain=${domain}` : '', // DİKKAT: https:// yok!
             `Max-Age=${refreshTokenMaxAge}`
-        ].join('; ');
+        ].filter(Boolean).join('; ');
 
-        // Set both cookies as array
         reply.header('Set-Cookie', [accessCookie, refreshCookie]);
 
-        // Debug log AFTER setting cookies
-        const headers = reply.getHeaders();
-        console.log('[COOKIE DEBUG] Cookies set:', {
-            refreshTokenPreview: `${refreshToken.substring(0, 8)}...`,
-            accessTokenPreview: `${accessToken.substring(0, 20)}...`,
-            secure: true,
-            sameSite: 'none',
-            nodeEnv: config.nodeEnv,
-            domain: 'https://health-system-backend-production-2dc9.up.railway.app',
-            setCookieHeader: headers['set-cookie'] || 'STILL NOT SET',
-            allHeaders: Object.keys(headers),
-        });
     });
 
     // Helper to clear auth cookies

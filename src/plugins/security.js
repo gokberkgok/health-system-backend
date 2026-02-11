@@ -46,33 +46,29 @@ async function securityPlugin(fastify, options) {
 
     fastify.log.info('Helmet security headers configured');
 
-    // CORS - Strict configuration for frontend only
+
     const allowedOrigins = [
         config.frontendUrl,
-        'https://5e38fcbc.health-system-frontend.pages.dev',
-        'https://health-system-frontend.pages.dev'
-    ].filter(Boolean); // Remove null/undefined values
+        'https://wellasoft.com',      
+        'https://www.wellasoft.com',  
+        'https://app.wellasoft.com', 
+        'http://localhost:3000'
+    ].filter(Boolean);
 
     console.log('[CORS DEBUG] Allowed origins:', allowedOrigins);
 
     await fastify.register(cors, {
         origin: (origin, callback) => {
-            console.log('[CORS DEBUG] Request from origin:', origin);
-            // Allow requests with no origin (e.g., mobile apps, Postman, curl)
-            if (!origin) {
-                callback(null, true);
-                return;
-            }
-            // Check if origin is in allowed list
+            // Origin yoksa (mobile app, postman) izin ver
+            if (!origin) return callback(null, true);
+            
             if (allowedOrigins.includes(origin)) {
-                console.log('[CORS DEBUG] Origin allowed:', origin);
                 callback(null, true);
             } else {
-                console.log('[CORS DEBUG] Origin REJECTED:', origin);
                 callback(new Error('Not allowed by CORS'));
             }
         },
-        credentials: true,
+        credentials: true, // Çerezlerin gitmesi için BU ŞART
         methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
         allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'X-Requested-With'],
         exposedHeaders: ['X-Total-Count', 'X-Page', 'X-Per-Page'],

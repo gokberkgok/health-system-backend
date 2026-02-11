@@ -53,12 +53,11 @@ export const config = {
     },
   },
 
-  // Cookies
+ // Cookies
   cookie: {
-    secure: process.env.NODE_ENV === 'production',
-    // Use 'none' for cross-origin cookie support
-    sameSite: 'none',
-    domain: 'https://health-system-backend-production-2dc9.up.railway.app',
+    secure: true, // Production'da true olmalı
+    sameSite: 'none', // Cross-domain (api -> frontend) için 'none' en garantisi
+    domain: '.wellasoft.com', // BAŞINDAKİ https:// KALKTI ve nokta eklendi
     httpOnly: true,
     path: '/',
   },
