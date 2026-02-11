@@ -50,7 +50,7 @@ async function securityPlugin(fastify, options) {
     const allowedOrigins = [
         config.frontendUrl,
         'https://5e38fcbc.health-system-frontend.pages.dev',
-        'https://app.2b83e693.health-system-frontend.pages.dev'
+        'https://health-system-frontend.pages.dev'
     ].filter(Boolean); // Remove null/undefined values
 
     await fastify.register(cors, {
