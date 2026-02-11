@@ -47,11 +47,14 @@ async function securityPlugin(fastify, options) {
     fastify.log.info('Helmet security headers configured');
 
     // CORS - Strict configuration for frontend only
+    const allowedOrigins = [
+        config.frontendUrl,
+        'https://5e38fcbc.health-system-frontend.pages.dev',
+        'https://app.2b83e693.health-system-frontend.pages.dev'
+    ].filter(Boolean); // Remove null/undefined values
+
     await fastify.register(cors, {
-        origin: [
-            'https://5e38fcbc.health-system-frontend.pages.dev',
-            'https://app.2b83e693.health-system-frontend.pages.dev'
-        ],
+        origin: allowedOrigins,
         credentials: true,
         methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
         allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
