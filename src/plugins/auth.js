@@ -61,23 +61,30 @@ async function authPlugin(fastify, options) {
 
     // Helper to set auth cookies
     fastify.decorate('setAuthCookies', (reply, accessToken, refreshToken) => {
-        // Access token cookie (short-lived)
-        reply.setCookie('access_token', accessToken, {
-            httpOnly: true,
-            secure: true,
-            sameSite: 'lax',
-            path: '/',
-            maxAge: 15 * 60, // 15 minutes
-        });
+        // Set cookies using raw Set-Cookie headers (more reliable for cross-origin)
+        const accessTokenMaxAge = 15 * 60; // 15 minutes
+        const refreshTokenMaxAge = 7 * 24 * 60 * 60; // 7 days
+        
+        const accessCookie = [
+            `access_token=${accessToken}`,
+            'HttpOnly',
+            'Secure',
+            'SameSite=None',
+            'Path=/',
+            `Max-Age=${accessTokenMaxAge}`
+        ].join('; ');
+        
+        const refreshCookie = [
+            `refresh_token=${refreshToken}`,
+            'HttpOnly',
+            'Secure',
+            'SameSite=None',
+            'Path=/',
+            `Max-Age=${refreshTokenMaxAge}`
+        ].join('; ');
 
-        // Refresh token cookie (long-lived)
-        reply.setCookie('refresh_token', refreshToken, {
-            httpOnly: true,
-            secure: true,
-            sameSite: 'lax',
-            path: '/',
-            maxAge: 7 * 24 * 60 * 60, // 7 days
-        });
+        // Set both cookies as array
+        reply.header('Set-Cookie', [accessCookie, refreshCookie]);
 
         // Debug log AFTER setting cookies
         const headers = reply.getHeaders();
@@ -85,9 +92,10 @@ async function authPlugin(fastify, options) {
             refreshTokenPreview: `${refreshToken.substring(0, 8)}...`,
             accessTokenPreview: `${accessToken.substring(0, 20)}...`,
             secure: true,
-            sameSite: 'lax',
+            sameSite: 'none',
             nodeEnv: config.nodeEnv,
-            setCookieHeader: headers['set-cookie'] || 'NOT SET',
+            setCookieHeader: headers['set-cookie'] || 'STILL NOT SET',
+            allHeaders: Object.keys(headers),
         });
     });
 
