@@ -42,17 +42,21 @@ export class AuthController {
                 deviceName || null
             );
 
-            // Set auth cookies (for web) - as fallback
+            // Set auth cookies (for web)
             this.fastify.setAuthCookies(reply, result.accessToken, result.refreshToken);
 
-            // Always include tokens in response body for cross-origin support
-            // Frontend will store in localStorage and send via Authorization header
+            // For mobile clients, also include tokens in response body
+            const isMobile = clientType === 'MOBILE';
+
             return {
                 success: true,
                 data: {
                     user: result.user,
-                    accessToken: result.accessToken,
-                    refreshToken: result.refreshToken,
+                    // Only include tokens for mobile clients
+                    ...(isMobile && {
+                        accessToken: result.accessToken,
+                        refreshToken: result.refreshToken,
+                    }),
                 },
             };
         } catch (error) {
@@ -67,17 +71,18 @@ export class AuthController {
      */
     async refresh(request, reply) {
         const clientType = request.headers['x-client-type'] || 'WEB';
+        const isMobile = clientType === 'MOBILE';
 
-        // Get refresh token from:
-        // 1. Authorization header (Bearer token)
-        // 2. Request body
-        // 3. Cookie (fallback for same-origin)
+        // For mobile: get refresh token from Authorization header or body
+        // For web: get from cookie
         let refreshToken;
-        const authHeader = request.headers['authorization'];
-        if (authHeader && authHeader.startsWith('Bearer ')) {
-            refreshToken = authHeader.substring(7);
-        } else if (request.body && request.body.refreshToken) {
-            refreshToken = request.body.refreshToken;
+        if (isMobile) {
+            const authHeader = request.headers['authorization'];
+            if (authHeader && authHeader.startsWith('Bearer ')) {
+                refreshToken = authHeader.substring(7);
+            } else if (request.body && request.body.refreshToken) {
+                refreshToken = request.body.refreshToken;
+            }
         } else {
             refreshToken = request.cookies.refresh_token;
         }
@@ -109,16 +114,18 @@ export class AuthController {
                 );
             }
 
-            // Set new auth cookies (for web) - as fallback
+            // Set new auth cookies (for web)
             this.fastify.setAuthCookies(reply, result.accessToken, result.refreshToken);
 
-            // Always include tokens in response body for cross-origin support
             return {
                 success: true,
                 data: {
                     message: 'Token yenilendi',
-                    accessToken: result.accessToken,
-                    refreshToken: result.refreshToken,
+                    // Only include tokens for mobile clients
+                    ...(isMobile && {
+                        accessToken: result.accessToken,
+                        refreshToken: result.refreshToken,
+                    }),
                 },
             };
         } catch (error) {
