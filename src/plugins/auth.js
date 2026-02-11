@@ -65,17 +65,20 @@ async function authPlugin(fastify, options) {
 
     // Helper to set auth cookies
     fastify.decorate('setAuthCookies', (reply, accessToken, refreshToken) => {
-        // Debug log
+        // Debug log with environment info
         console.log('[COOKIE DEBUG] Setting cookies:', {
             refreshTokenPreview: `${refreshToken.substring(0, 8)}...`,
-            accessTokenPreview: `${accessToken.substring(0, 20)}...`
+            accessTokenPreview: `${accessToken.substring(0, 20)}...`,
+            secure: config.cookie.secure,
+            sameSite: config.cookie.sameSite,
+            nodeEnv: config.nodeEnv,
         });
 
         // Access token cookie (short-lived)
         reply.setCookie('access_token', accessToken, {
             httpOnly: true,
-            secure: config.cookie.secure,
-            sameSite: config.cookie.sameSite,
+            secure: true,
+            sameSite: 'lax',
             path: '/',
             maxAge: 15 * 60, // 15 minutes
         });
@@ -83,11 +86,15 @@ async function authPlugin(fastify, options) {
         // Refresh token cookie (long-lived)
         reply.setCookie('refresh_token', refreshToken, {
             httpOnly: true,
-            secure: config.cookie.secure,
-            sameSite: config.cookie.sameSite,
+            secure: true,
+            sameSite: 'lax',
             path: '/',
             maxAge: 7 * 24 * 60 * 60, // 7 days
         });
+
+        // Log the Set-Cookie headers being sent
+        const setCookieHeaders = reply.getHeader('Set-Cookie');
+        console.log('[COOKIE DEBUG] Set-Cookie headers:', setCookieHeaders);
     });
 
     // Helper to clear auth cookies
