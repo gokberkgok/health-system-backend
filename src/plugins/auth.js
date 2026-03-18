@@ -67,12 +67,14 @@ async function authPlugin(fastify, options) {
         
         const isProduction = process.env.NODE_ENV === 'production';
         const domain = isProduction ? '.wellasoft.com' : undefined; // Localhost'ta domain undefined olmalı
+        const secure = isProduction;
+        const sameSite = isProduction ? 'None' : 'Lax';
 
         const accessCookie = [
             `access_token=${accessToken}`,
             'HttpOnly',
-            'Secure', // HTTPS şart
-            'SameSite=None', // Farklı subdomainler (api. ve www.) konuşacağı için None kalmalı
+            secure ? 'Secure' : '',
+            `SameSite=${sameSite}`,
             'Path=/',
             domain ? `Domain=${domain}` : '', // DİKKAT: https:// yok!
             `Max-Age=${accessTokenMaxAge}`
@@ -81,8 +83,8 @@ async function authPlugin(fastify, options) {
         const refreshCookie = [
             `refresh_token=${refreshToken}`,
             'HttpOnly',
-            'Secure',
-            'SameSite=None',
+            secure ? 'Secure' : '',
+            `SameSite=${sameSite}`,
             'Path=/',
             domain ? `Domain=${domain}` : '', // DİKKAT: https:// yok!
             `Max-Age=${refreshTokenMaxAge}`
@@ -96,13 +98,15 @@ async function authPlugin(fastify, options) {
     fastify.decorate('clearAuthCookies', (reply) => {
         const isProduction = process.env.NODE_ENV === 'production';
         const domain = isProduction ? '.wellasoft.com' : undefined;
+        const secure = isProduction;
+        const sameSite = isProduction ? 'none' : 'lax';
 
         // Clear cookies with same options as when they were set
         const clearOptions = {
             path: '/',
             httpOnly: true,
-            secure: true,
-            sameSite: 'none',
+            secure,
+            sameSite,
             ...(domain && { domain }),
         };
         

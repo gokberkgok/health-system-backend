@@ -67,7 +67,8 @@ export class CustomersController {
         const result = await this.customerService.update(
             request.params.id,
             request.companyId,
-            request.body
+            request.body,
+            request.user?.role
         );
 
         return {

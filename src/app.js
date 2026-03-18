@@ -59,24 +59,19 @@ import {
 
 async function buildApp() {
     const fastify = Fastify({
-        logger: {
-            level: config.isProduction ? 'info' : 'debug',
-            transport: config.isProduction
-                ? undefined
-                : {
-                    target: 'pino-pretty',
-                    options: {
-                        colorize: true,
-                        translateTime: 'SYS:standard',
-                        ignore: 'pid,hostname',
-                    },
-                },
-        },
+        loggerInstance: logger,
+        disableRequestLogging: true,
         trustProxy: true, // Trust Cloudflare/Nginx proxy headers
     });
 
     // Add config to fastify instance
     fastify.decorate('config', config);
+
+    // Simple request summary log: METHOD URL STATUS MS
+    fastify.addHook('onResponse', async (request, reply) => {
+        const responseTime = Number(reply.elapsedTime || 0).toFixed(1);
+        fastify.log.info(`${request.method} ${request.url} ${reply.statusCode} ${responseTime}ms`);
+    });
 
     // Register plugins
     await fastify.register(prismaPlugin);
@@ -86,6 +81,7 @@ async function buildApp() {
     // Initialize repositories
     const userRepository = new UserRepository(fastify.prisma);
     const refreshTokenRepository = new RefreshTokenRepository(fastify.prisma);
+    fastify.decorate('refreshTokenRepository', refreshTokenRepository);
     const customerRepository = new CustomerRepository(fastify.prisma);
     const deviceRepository = new DeviceRepository(fastify.prisma);
     const appointmentRepository = new AppointmentRepository(fastify.prisma);
@@ -98,6 +94,7 @@ async function buildApp() {
         refreshTokenRepository,
         fastify
     );
+    fastify.decorate('authService', authService);
     const customerService = new CustomerService(customerRepository);
     const appointmentService = new AppointmentService(
         appointmentRepository,

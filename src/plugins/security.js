@@ -48,6 +48,7 @@ async function securityPlugin(fastify, options) {
 
 
     const allowedOrigins = [
+        config.frontendUrl,
         'https://wellasoft.com', 
         'https://health-system-frontend.pages.dev',
         'https://www.wellasoft.com',  
@@ -70,8 +71,8 @@ async function securityPlugin(fastify, options) {
         },
         credentials: true, // Çerezlerin gitmesi için BU ŞART
         methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-        allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'X-Requested-With'],
-        exposedHeaders: ['X-Total-Count', 'X-Page', 'X-Per-Page'],
+        allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'X-Requested-With', 'X-Refresh-Token'],
+        exposedHeaders: ['X-Total-Count', 'X-Page', 'X-Per-Page', 'x-new-access-token'],
         maxAge: 86400, // 24 hours
     });
 

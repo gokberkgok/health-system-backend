@@ -28,7 +28,13 @@ export class AuthService {
      * Generate refresh token data
      */
     generateRefreshToken(user) {
-        const token = uuidv4();
+        const token = this.fastify.signRefreshToken({
+            sub: user.id.toString(),
+            companyId: user.companyId.toString(),
+            email: user.email,
+            role: user.role,
+            jti: uuidv4(),
+        });
         const expiresAt = new Date(Date.now() + config.jwt.refreshExpiresInMs);
         return { token, expiresAt };
     }
@@ -97,10 +103,19 @@ export class AuthService {
      * Refresh access token using refresh token
      */
     async refresh(refreshToken) {
+        const decoded = await this.fastify.verifyRefreshToken(refreshToken);
+        if (!decoded) {
+            throw new UnauthorizedError('Geçersiz veya süresi dolmuş refresh token');
+        }
+
         // Find valid refresh token
         const tokenRecord = await this.refreshTokenRepository.findValidToken(refreshToken);
         if (!tokenRecord) {
             throw new UnauthorizedError('Geçersiz veya süresi dolmuş refresh token');
+        }
+
+        if (String(tokenRecord.userId) !== String(decoded.sub)) {
+            throw new UnauthorizedError('Refresh token kullanıcıyla eşleşmiyor');
         }
 
         const user = tokenRecord.user;
@@ -141,8 +156,17 @@ export class AuthService {
             return null;
         }
 
+        const decoded = await this.fastify.verifyRefreshToken(refreshToken);
+        if (!decoded) {
+            return null;
+        }
+
         const tokenRecord = await this.refreshTokenRepository.findValidToken(refreshToken);
         if (!tokenRecord) {
+            return null;
+        }
+
+        if (String(tokenRecord.userId) !== String(decoded.sub)) {
             return null;
         }
 

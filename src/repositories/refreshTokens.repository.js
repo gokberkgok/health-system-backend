@@ -75,24 +75,22 @@ export class RefreshTokenRepository {
     }
 
     /**
-     * Revoke a refresh token
+     * Delete a refresh token permanently
      */
-    async revoke(token) {
+    async deleteToken(token) {
         const tokenHash = hashToken(token);
 
-        return await this.prisma.refreshToken.updateMany({
+        return await this.prisma.refreshToken.deleteMany({
             where: { tokenHash },
-            data: { revokedAt: new Date() },
         });
     }
 
     /**
-     * Revoke all tokens for a user (useful for logout all devices)
+     * Delete all tokens for a user (useful for logout all devices)
      */
-    async revokeAllForUser(userId) {
-        return await this.prisma.refreshToken.updateMany({
-            where: { userId, revokedAt: null },
-            data: { revokedAt: new Date() },
+    async deleteAllForUserTokens(userId) {
+        return await this.prisma.refreshToken.deleteMany({
+            where: { userId },
         });
     }
 
@@ -196,17 +194,17 @@ export class RefreshTokenRepository {
     }
 
     /**
-     * @deprecated Use revokeAllForUser instead
+     * @deprecated Use deleteAllForUserTokens instead
      */
     async deleteAllForUser(userId) {
-        return this.revokeAllForUser(userId);
+        return this.deleteAllForUserTokens(userId);
     }
 
     /**
-     * @deprecated Use revoke instead
+     * @deprecated Use deleteToken instead
      */
     async deleteByToken(token) {
-        return this.revoke(token);
+        return this.deleteToken(token);
     }
 }
 

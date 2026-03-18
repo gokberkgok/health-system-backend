@@ -5,7 +5,6 @@ const requiredEnvVars = [
   'DATABASE_URL',
   'JWT_ACCESS_SECRET',
   'JWT_REFRESH_SECRET',
-  'FRONTEND_URL',
 ];
 
 // Validate required environment variables
@@ -36,7 +35,7 @@ export const config = {
   },
 
   // CORS
-  frontendUrl: process.env.FRONTEND_URL,
+  frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3000',
 
   // Security
   bcryptRounds: parseInt(process.env.BCRYPT_ROUNDS || '12', 10),
@@ -55,9 +54,9 @@ export const config = {
 
  // Cookies
   cookie: {
-    secure: true, // Production'da true olmalı
-    sameSite: 'none', // Cross-domain (api -> frontend) için 'none' en garantisi
-    domain: '.wellasoft.com', // BAŞINDAKİ https:// KALKTI ve nokta eklendi
+     secure: process.env.NODE_ENV === 'production',
+     sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+     domain: process.env.COOKIE_DOMAIN || undefined,
     httpOnly: true,
     path: '/',
   },

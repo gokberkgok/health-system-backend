@@ -91,18 +91,24 @@ export class CustomerService {
     /**
      * Update customer
      */
-    async update(id, companyId, data) {
-        this.validateCustomerData(data, true);
+    async update(id, companyId, data, userRole) {
+        const updateData = { ...data };
+
+        if (userRole !== 'ADMIN' && Object.prototype.hasOwnProperty.call(updateData, 'totalDebt')) {
+            delete updateData.totalDebt;
+        }
+
+        this.validateCustomerData(updateData, true);
 
         // Check if TC identity is already in use by another customer
-        if (data.tcIdentity) {
-            const existing = await this.customerRepository.findByTcIdentity(data.tcIdentity, companyId);
+        if (updateData.tcIdentity) {
+            const existing = await this.customerRepository.findByTcIdentity(updateData.tcIdentity, companyId);
             if (existing && existing.id !== id) {
                 throw new ValidationError('Bu TC Kimlik numarası başka bir müşteri tarafından kullanılıyor');
             }
         }
 
-        const customer = await this.customerRepository.update(id, companyId, data);
+        const customer = await this.customerRepository.update(id, companyId, updateData);
         if (!customer) {
             throw new NotFoundError('Customer');
         }
@@ -168,16 +174,52 @@ export class CustomerService {
         this.paymentRepository = paymentRepository;
     }
 
+    parseNaiveDateTime(value) {
+        if (!value) return new Date(NaN);
+
+        if (value instanceof Date) {
+            if (Number.isNaN(value.getTime())) {
+                return new Date(NaN);
+            }
+
+            return new Date(
+                value.getUTCFullYear(),
+                value.getUTCMonth(),
+                value.getUTCDate(),
+                value.getUTCHours(),
+                value.getUTCMinutes(),
+                value.getUTCSeconds(),
+                value.getUTCMilliseconds()
+            );
+        }
+
+        const str = String(value);
+        const match = str.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?/);
+        if (match) {
+            const [, y, mo, d, h, mi, s = '0'] = match;
+            return new Date(Number(y), Number(mo) - 1, Number(d), Number(h), Number(mi), Number(s));
+        }
+
+        return new Date(str);
+    }
+
     formatDate(date) {
-        return new Date(date).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
+        return this.parseNaiveDateTime(date).toLocaleDateString('tr-TR', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+        });
     }
 
     formatTime(date) {
-        return new Date(date).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+        return this.parseNaiveDateTime(date).toLocaleTimeString('tr-TR', {
+            hour: '2-digit',
+            minute: '2-digit',
+        });
     }
 
     formatDayName(date) {
-        return new Date(date).toLocaleDateString('tr-TR', { weekday: 'long' });
+        return this.parseNaiveDateTime(date).toLocaleDateString('tr-TR', { weekday: 'long' });
     }
 
     /**
@@ -198,22 +240,22 @@ export class CustomerService {
 
         // Group appointments by status and time
         const upcomingScheduled = appointments
-            .filter(apt => apt.status === 'scheduled' && new Date(apt.startTime) >= now)
-            .sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
+            .filter(apt => apt.status === 'scheduled' && this.parseNaiveDateTime(apt.startTime) >= now)
+            .sort((a, b) => this.parseNaiveDateTime(a.startTime) - this.parseNaiveDateTime(b.startTime));
 
         const pastScheduled = appointments
-            .filter(apt => apt.status === 'scheduled' && new Date(apt.startTime) < now)
-            .sort((a, b) => new Date(b.startTime) - new Date(a.startTime))
+            .filter(apt => apt.status === 'scheduled' && this.parseNaiveDateTime(apt.startTime) < now)
+            .sort((a, b) => this.parseNaiveDateTime(b.startTime) - this.parseNaiveDateTime(a.startTime))
             .slice(0, 5); // Last 5 past scheduled
 
         const completed = appointments
             .filter(apt => apt.status === 'completed')
-            .sort((a, b) => new Date(b.startTime) - new Date(a.startTime))
+            .sort((a, b) => this.parseNaiveDateTime(b.startTime) - this.parseNaiveDateTime(a.startTime))
             .slice(0, 5); // Last 5 completed
 
         const cancelled = appointments
             .filter(apt => apt.status === 'cancelled')
-            .sort((a, b) => new Date(b.startTime) - new Date(a.startTime))
+            .sort((a, b) => this.parseNaiveDateTime(b.startTime) - this.parseNaiveDateTime(a.startTime))
             .slice(0, 3); // Last 3 cancelled
 
         console.log('[DEBUG] Filtered appointments:', {

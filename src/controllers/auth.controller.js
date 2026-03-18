@@ -116,6 +116,7 @@ export class AuthController {
 
             // Set new auth cookies (for web)
             this.fastify.setAuthCookies(reply, result.accessToken, result.refreshToken);
+            reply.header('x-new-access-token', result.accessToken);
 
             return {
                 success: true,
@@ -149,30 +150,8 @@ export class AuthController {
         // Delete refresh token from database
         if (refreshToken) {
             try {
-                // Calculate hash for debugging
-                const tokenHash = this.authService.refreshTokenRepository.hashToken(refreshToken);
-                this.fastify.log.info({
-                    tokenHashPreview: `${tokenHash.substring(0, 16)}...`
-                }, 'Token hash calculated');
-
-                // First try to find the token to get userId
-                const tokenRecord = await this.authService.refreshTokenRepository.findValidToken(refreshToken);
-
-                this.fastify.log.info({
-                    foundToken: !!tokenRecord,
-                    userId: tokenRecord?.userId?.toString(),
-                    expiresAt: tokenRecord?.expiresAt
-                }, 'Token lookup result');
-
-                if (tokenRecord) {
-                    // Delete the user's refresh token by userId
-                    const deleteResult = await this.authService.refreshTokenRepository.deleteAllForUser(tokenRecord.userId);
-                    this.fastify.log.info({ deleteCount: deleteResult.count }, 'Deleted user tokens');
-                } else {
-                    // Token might be expired, try to delete by hash anyway
-                    const deleteResult = await this.authService.refreshTokenRepository.deleteByToken(refreshToken);
-                    this.fastify.log.info({ deleteCount: deleteResult.count }, 'Deleted by token hash');
-                }
+                const deleteResult = await this.authService.refreshTokenRepository.deleteByToken(refreshToken);
+                this.fastify.log.info({ deleteCount: deleteResult.count }, 'Deleted refresh token by token hash');
             } catch (error) {
                 this.fastify.log.error({ error: error.message }, 'Error deleting refresh token');
             }
@@ -194,39 +173,44 @@ export class AuthController {
     async me(request, reply) {
         const refreshToken = request.cookies.refresh_token;
 
-        // First check if we have a valid access token
-        if (request.user) {
-            // Get full user details from database
-            const user = await this.userRepository.findById(request.user.id);
+        let userId = request.user?.id;
 
-            if (!user) {
-                // This should ideally not happen if request.user is valid, but good for safety
+        if (!userId) {
+            // If access token is invalid/expired, check refresh token
+            const sessionUser = await this.authService.checkSession(refreshToken);
+
+            if (!sessionUser) {
+                // Clear cookies and return unauthorized
                 this.fastify.clearAuthCookies(reply);
                 reply.code(401);
                 return {
                     success: false,
-                    error: { code: 'UNAUTHORIZED', message: 'User not found or session invalid.' },
+                    error: { code: 'UNAUTHORIZED', message: 'Oturum süresi doldu. Lütfen tekrar giriş yapın.' },
                 };
             }
 
-            return {
-                success: true,
-                data: {
-                    id: user.id,
-                    companyId: user.companyId,
-                    email: user.email,
-                    firstName: user.firstName,
-                    lastName: user.lastName,
-                    role: user.role,
-                    companyName: user.company.name,
-                    planKey: user.company.plan.key,
-                    planName: user.company.plan.name,
-                },
-            };
+            userId = sessionUser.id;
+
+            // Valid refresh token - issue new access token
+            const accessToken = this.authService.generateAccessToken({
+                id: sessionUser.id,
+                companyId: sessionUser.companyId,
+                email: sessionUser.email,
+                role: sessionUser.role,
+            });
+
+            // Set new access token cookie
+            reply.cookie('access_token', accessToken, {
+                httpOnly: true,
+                secure: config.nodeEnv === 'production',
+                sameSite: 'none',
+                path: '/',
+                maxAge: config.jwt.accessExpiresInMs,
+            });
+            reply.header('x-new-access-token', accessToken);
         }
 
-        // If access token is invalid/expired, check refresh token
-        const user = await this.authService.checkSession(refreshToken);
+        const user = await this.userRepository.findById(userId);
 
         if (!user) {
             // Clear cookies and return unauthorized
@@ -234,30 +218,23 @@ export class AuthController {
             reply.code(401);
             return {
                 success: false,
-                error: { code: 'UNAUTHORIZED', message: 'Oturum süresi doldu. Lütfen tekrar giriş yapın.' },
+                error: { code: 'UNAUTHORIZED', message: 'User not found or session invalid.' },
             };
         }
 
-        // Valid refresh token - issue new access token
-        const accessToken = this.authService.generateAccessToken({
-            id: user.id,
-            companyId: user.companyId,
-            email: user.email,
-            role: user.role,
-        });
-
-        // Set new access token cookie
-        reply.cookie('access_token', accessToken, {
-            httpOnly: true,
-            secure: config.nodeEnv === 'production',
-            sameSite: 'none',
-            path: '/',
-            maxAge: config.jwt.accessExpiresInMs,
-        });
-
         return {
             success: true,
-            data: { user },
+            data: {
+                id: user.id,
+                companyId: user.companyId,
+                email: user.email,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                role: user.role,
+                companyName: user.company.name,
+                planKey: user.company.plan.key,
+                planName: user.company.plan.name,
+            },
         };
     }
 

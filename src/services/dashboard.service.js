@@ -13,13 +13,15 @@ export class DashboardService {
             totalCustomers,
             genderStats,
             todayAppointments,
-            upcomingAppointments,
+            todayAppointmentList,
         ] = await Promise.all([
             this.customerRepository.count(companyId),
             this.customerRepository.getGenderStats(companyId),
             this.appointmentRepository.countToday(companyId),
-            this.appointmentRepository.getUpcoming(companyId, 5),
+            this.appointmentRepository.findTodayAppointments(companyId),
         ]);
+
+        const todayAppointmentsForDashboard = todayAppointmentList.slice(0, 5);
 
         return {
             customers: {
@@ -28,7 +30,7 @@ export class DashboardService {
             },
             appointments: {
                 today: todayAppointments,
-                upcoming: upcomingAppointments.map(apt => ({
+                upcoming: todayAppointmentsForDashboard.map(apt => ({
                     id: apt.id.toString(),
                     customerName: apt.customer?.fullName,
                     customerPhone: apt.customer?.phone,

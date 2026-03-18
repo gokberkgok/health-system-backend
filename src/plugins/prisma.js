@@ -4,9 +4,7 @@ import fp from 'fastify-plugin';
 
 async function prismaPlugin(fastify, options) {
     const prisma = new PrismaClient({
-        log: fastify.config?.isProduction
-            ? ['error']
-            : ['query', 'info', 'warn', 'error'],
+        log: ['error'],
     });
 
     // Connect on startup
