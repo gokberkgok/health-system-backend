@@ -73,13 +73,6 @@ export class AuthService {
 
         // Log for debugging
         const tokenHash = this.refreshTokenRepository.hashToken(refreshToken);
-        console.log('[LOGIN DEBUG] Token generated:', {
-            tokenPreview: `${refreshToken.substring(0, 8)}...`,
-            hashPreview: `${tokenHash.substring(0, 16)}...`,
-            userId: user.id.toString(),
-            clientType,
-            expiresAt
-        });
 
         // Store refresh token - Delete old, create new (with client info)
         await this.refreshTokenRepository.upsertForUser(user.id, refreshToken, expiresAt, clientType, ipAddress, userAgent);

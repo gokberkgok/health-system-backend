@@ -232,12 +232,6 @@ export class CustomerService {
         const now = new Date();
         const appointments = await this.appointmentRepository.findByCustomerId(customerId, companyId);
 
-        console.log('[DEBUG] getAppointmentMessage:', {
-            customerId,
-            totalAppointments: appointments.length,
-            appointmentStatuses: appointments.map(a => ({ id: a.id, status: a.status, startTime: a.startTime }))
-        });
-
         // Group appointments by status and time
         const upcomingScheduled = appointments
             .filter(apt => apt.status === 'scheduled' && this.parseNaiveDateTime(apt.startTime) >= now)
@@ -258,12 +252,6 @@ export class CustomerService {
             .sort((a, b) => this.parseNaiveDateTime(b.startTime) - this.parseNaiveDateTime(a.startTime))
             .slice(0, 3); // Last 3 cancelled
 
-        console.log('[DEBUG] Filtered appointments:', {
-            upcomingScheduled: upcomingScheduled.length,
-            pastScheduled: pastScheduled.length,
-            completed: completed.length,
-            cancelled: cancelled.length
-        });
 
         let message = `Merhaba ${customer.fullName},\n\n`;
 

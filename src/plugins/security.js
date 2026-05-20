@@ -56,8 +56,6 @@ async function securityPlugin(fastify, options) {
         'http://localhost:3000'
     ].filter(Boolean);
 
-    console.log('[CORS DEBUG] Allowed origins:', allowedOrigins);
-
     await fastify.register(cors, {
         origin: (origin, callback) => {
             // Origin yoksa (mobile app, postman) izin ver

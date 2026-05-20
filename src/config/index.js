@@ -43,7 +43,7 @@ export const config = {
   // Rate Limiting
   rateLimit: {
     global: {
-      max: parseInt(process.env.RATE_LIMIT_GLOBAL_MAX || '100', 10),
+      max: parseInt(process.env.RATE_LIMIT_GLOBAL_MAX || '200', 10),
       timeWindow: process.env.RATE_LIMIT_GLOBAL_WINDOW || '1 minute',
     },
     auth: {
