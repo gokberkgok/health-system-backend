@@ -1,26 +1,31 @@
-// Prisma client plugin for Fastify
 import { PrismaClient } from '@prisma/client';
 import fp from 'fastify-plugin';
 
-async function prismaPlugin(fastify, options) {
-    const prisma = new PrismaClient({
-        log: ['error'],
-    });
+const globalForPrisma = globalThis;
 
-    // Connect on startup
-    await prisma.$connect();
-    fastify.log.info('Database connected');
+const prisma =
+  globalForPrisma.prisma ||
+  new PrismaClient({
+    log: ['error'],
+  });
 
-    // Decorate fastify with prisma client
-    fastify.decorate('prisma', prisma);
+if (process.env.NODE_ENV !== 'production') {
+  globalForPrisma.prisma = prisma;
+}
 
-    // Close connection on shutdown
-    fastify.addHook('onClose', async (instance) => {
-        await instance.prisma.$disconnect();
-        fastify.log.info('Database disconnected');
-    });
+async function prismaPlugin(fastify) {
+  await prisma.$connect();
+
+  fastify.log.info('Database connected');
+
+  fastify.decorate('prisma', prisma);
+
+  fastify.addHook('onClose', async () => {
+    await prisma.$disconnect();
+    fastify.log.info('Database disconnected');
+  });
 }
 
 export default fp(prismaPlugin, {
-    name: 'prisma',
+  name: 'prisma',
 });

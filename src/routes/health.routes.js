@@ -1,50 +1,61 @@
-// Health check routes - Public endpoints for monitoring
-export default async function healthRoutes(fastify, options) {
-    // GET /health - Basic health check
-    fastify.get('/', {
-        handler: async (request, reply) => {
-            return {
-                status: 'ok',
-                timestamp: new Date().toISOString(),
-                uptime: process.uptime(),
-            };
-        },
+export default async function healthRoutes(fastify) {
+    // Common headers for health endpoints
+    const noCacheHeaders = {
+        'Cache-Control': 'no-store',
+    };
+
+    // GET /health
+    // Basic health check
+    fastify.get('/', async (request, reply) => {
+        reply.headers(noCacheHeaders);
+
+        return {
+            status: 'ok',
+            service: 'backend',
+            timestamp: new Date().toISOString(),
+            uptime: process.uptime(),
+        };
     });
 
-    // GET /health/ready - Readiness check (includes database)
-    fastify.get('/ready', {
-        handler: async (request, reply) => {
-            try {
-                // Check database connection
-                await fastify.prisma.$queryRaw`SELECT 1`;
+    // GET /health/live
+    // Liveness check
+    fastify.get('/live', async (request, reply) => {
+        reply.headers(noCacheHeaders);
 
-                return {
-                    status: 'ready',
-                    timestamp: new Date().toISOString(),
-                    checks: {
-                        database: 'connected',
-                    },
-                };
-            } catch (error) {
-                reply.code(503);
-                return {
-                    status: 'not_ready',
-                    timestamp: new Date().toISOString(),
-                    checks: {
-                        database: 'disconnected',
-                    },
-                };
-            }
-        },
+        return {
+            status: 'alive',
+            timestamp: new Date().toISOString(),
+        };
     });
 
-    // GET /health/live - Liveness check
-    fastify.get('/live', {
-        handler: async (request, reply) => {
+    // GET /health/ready
+    // Readiness check (database included)
+    fastify.get('/ready', async (request, reply) => {
+        reply.headers(noCacheHeaders);
+
+        try {
+            // DB ping
+            await fastify.prisma.$queryRaw`SELECT 1`;
+
             return {
-                status: 'alive',
+                status: 'ready',
                 timestamp: new Date().toISOString(),
+                checks: {
+                    database: 'connected',
+                },
             };
-        },
+        } catch (error) {
+            request.log.error(error, 'Database readiness check failed');
+
+            reply.code(503);
+
+            return {
+                status: 'not_ready',
+                timestamp: new Date().toISOString(),
+                checks: {
+                    database: 'disconnected',
+                },
+            };
+        }
     });
 }
